@@ -1,0 +1,8 @@
+pyodbc
+python-dotenv
+openpyxl
+openai
+azure-cosmos
+fastapi
+uvicorn
+gunicorn

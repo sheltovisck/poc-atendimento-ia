@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Dados sensíveis / PII de clientes - não versionar
+*.xlsx
+deploy.zip
+
+# Config local do Claude Code
+.claude/

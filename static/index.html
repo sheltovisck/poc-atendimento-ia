@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<title>POC Atendimento IA</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --accent: #0067ff;
+    --border: #e2e2e6;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181c;
+      --card: #24252b;
+      --text: #f2f2f4;
+      --muted: #9a9aa2;
+      --accent: #4d9dff;
+      --border: #33343b;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --series-4: #c98500;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .layout {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+  }
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 40px;
+  }
+  .sidebar h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+  .historico-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    margin-bottom: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .historico-item:hover {
+    border-color: var(--accent);
+  }
+  .historico-vazio {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .dados-cadastrais {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .dados-cadastrais div {
+    min-width: 140px;
+  }
+  main {
+    width: 100%;
+    max-width: 720px;
+    flex: 1;
+    min-width: 0;
+  }
+  @media (max-width: 760px) {
+    .layout {
+      flex-direction: column;
+    }
+    .sidebar {
+      width: 100%;
+      position: static;
+    }
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+  }
+  p.subtitle {
+    color: var(--muted);
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+  form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  input[type=text] {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 1rem;
+  }
+  button {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .resposta {
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  .fonte {
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+  .fonte:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+  .fonte .meta {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 2px;
+  }
+  #status {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .stat-tile {
+    margin-bottom: 20px;
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 2.2rem;
+    font-weight: 600;
+  }
+  .chart-cols {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    height: 140px;
+    border-bottom: 1px solid var(--baseline);
+    padding: 0 4px;
+  }
+  .chart-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 64px;
+    height: 100%;
+  }
+  .chart-value {
+    font-size: 0.8rem;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .chart-bar {
+    width: 24px;
+    border-radius: 4px 4px 0 0;
+    cursor: default;
+  }
+  .chart-bar:hover {
+    opacity: 0.85;
+  }
+  .chart-labels {
+    display: flex;
+    gap: 24px;
+    padding: 0 4px;
+    margin-top: 8px;
+  }
+  .chart-label {
+    width: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .chart-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .hbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .hbar-label {
+    width: 170px;
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hbar-track {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  .hbar-bar {
+    height: 20px;
+    border-radius: 0 4px 4px 0;
+    background: var(--series-1);
+    cursor: default;
+  }
+  .hbar-value {
+    margin-left: 8px;
+    font-size: 0.82rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  table.atendimentos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 20px;
+  }
+  table.atendimentos th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--gridline);
+    padding: 6px 8px;
+  }
+  table.atendimentos td {
+    padding: 8px;
+    border-bottom: 1px solid var(--gridline);
+    vertical-align: top;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h2>Últimos clientes consultados</h2>
+    <div id="historicoLista"></div>
+  </aside>
+
+  <main>
+  <h1>POC Atendimento IA</h1>
+  <p class="subtitle">Pergunte sobre atendimentos, chamados e ligações registrados.</p>
+
+  <form id="form">
+    <input type="text" id="pergunta" placeholder="Ex: O que aconteceu com o chamado sobre erro 500?" autocomplete="off" />
+    <button type="submit" id="btn">Perguntar</button>
+  </form>
+
+  <p id="status"></p>
+
+  <div id="respostaCard" class="card" hidden>
+    <h2>Resposta</h2>
+    <div id="resposta" class="resposta"></div>
+  </div>
+
+  <div id="fontesCard" class="card" hidden>
+    <h2>Fontes utilizadas</h2>
+    <div id="fontes"></div>
+  </div>
+
+  <div id="resumoCliente" class="card" hidden>
+    <h2>Atendimentos de <span id="resumoClienteNome"></span></h2>
+
+    <div class="dados-cadastrais">
+      <div>
+        <div class="stat-label">Nome</div>
+        <div id="clienteDadosNome"></div>
+      </div>
+      <div>
+        <div class="stat-label">E-mail</div>
+        <div id="clienteDadosEmail"></div>
+      </div>
+      <div>
+        <div class="stat-label">Telefone</div>
+        <div id="clienteDadosTelefone"></div>
+      </div>
+      <div>
+        <div class="stat-label">CPF</div>
+        <div id="clienteDadosDocumento"></div>
+      </div>
+    </div>
+
+    <div class="stat-tile">
+      <div class="stat-label">Total de atendimentos</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+
+    <div class="chart-cols" id="chartCols"></div>
+    <div class="chart-labels" id="chartLabels"></div>
+
+    <h2 style="margin-top: 24px;">Assuntos mais frequentes</h2>
+    <div id="chartAssuntos"></div>
+
+    <table class="atendimentos" id="tabelaAtendimentos">
+      <thead>
+        <tr>
+          <th>Número do chamado</th>
+          <th>Assunto</th>
+          <th>Status</th>
+          <th>Data de abertura</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaAtendimentosBody"></tbody>
+    </table>
+  </div>
+  </main>
+</div>
+
+<script>
+  const form = document.getElementById("form");
+  const input = document.getElementById("pergunta");
+  const btn = document.getElementById("btn");
+  const statusEl = document.getElementById("status");
+  const respostaCard = document.getElementById("respostaCard");
+  const respostaEl = document.getElementById("resposta");
+  const fontesCard = document.getElementById("fontesCard");
+  const fontesEl = document.getElementById("fontes");
+
+  const SERIES_COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
+
+  const resumoCliente = document.getElementById("resumoCliente");
+  const resumoClienteNome = document.getElementById("resumoClienteNome");
+  const statTotal = document.getElementById("statTotal");
+  const chartCols = document.getElementById("chartCols");
+  const chartLabels = document.getElementById("chartLabels");
+  const chartAssuntos = document.getElementById("chartAssuntos");
+  const tabelaAtendimentosBody = document.getElementById("tabelaAtendimentosBody");
+  const historicoLista = document.getElementById("historicoLista");
+  const clienteDadosNome = document.getElementById("clienteDadosNome");
+  const clienteDadosEmail = document.getElementById("clienteDadosEmail");
+  const clienteDadosTelefone = document.getElementById("clienteDadosTelefone");
+  const clienteDadosDocumento = document.getElementById("clienteDadosDocumento");
+
+  const HISTORICO_KEY = "poc_historico_clientes";
+  const HISTORICO_MAX = 10;
+
+  function lerHistorico() {
+    try {
+      return JSON.parse(localStorage.getItem(HISTORICO_KEY)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function registrarHistorico(clienteId, nome) {
+    const lista = lerHistorico().filter((item) => item.clienteId !== clienteId);
+    lista.unshift({ clienteId, nome });
+    localStorage.setItem(HISTORICO_KEY, JSON.stringify(lista.slice(0, HISTORICO_MAX)));
+    renderizarHistorico();
+  }
+
+  function renderizarHistorico() {
+    const lista = lerHistorico();
+    historicoLista.innerHTML = "";
+
+    if (lista.length === 0) {
+      const vazio = document.createElement("p");
+      vazio.className = "historico-vazio";
+      vazio.textContent = "Nenhum cliente consultado ainda.";
+      historicoLista.appendChild(vazio);
+      return;
+    }
+
+    lista.forEach((item) => {
+      const itemBtn = document.createElement("button");
+      itemBtn.type = "button";
+      itemBtn.className = "historico-item";
+      itemBtn.textContent = item.nome;
+      itemBtn.addEventListener("click", () => carregarAtendimentos(item.clienteId));
+      historicoLista.appendChild(itemBtn);
+    });
+  }
+
+  renderizarHistorico();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pergunta = input.value.trim();
+    if (!pergunta) return;
+
+    btn.disabled = true;
+    statusEl.textContent = "Consultando...";
+    respostaCard.hidden = true;
+    fontesCard.hidden = true;
+    resumoCliente.hidden = true;
+
+    try {
+      const res = await fetch("/perguntar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pergunta }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      respostaEl.textContent = data.resposta;
+      respostaCard.hidden = false;
+
+      fontesEl.innerHTML = "";
+      data.fontes.forEach((f) => {
+        const div = document.createElement("div");
+        div.className = "fonte";
+        const cliente = f.clientNome ? `${f.clientNome} (id ${f.clientId})` : `cliente ${f.clientId}`;
+        let html = `<div class="meta">${f.origem} · ${cliente} · similaridade ${(1 - f.score).toFixed(3)}</div>${f.texto}`;
+        if (f.dadosSql) {
+          const detalhes = Object.entries(f.dadosSql)
+            .filter(([, v]) => v !== null && v !== undefined)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(" · ");
+          html += `<div class="meta" style="margin-top:6px;">Dados atuais no SQL: ${detalhes}</div>`;
+        }
+        div.innerHTML = html;
+        fontesEl.appendChild(div);
+      });
+      fontesCard.hidden = false;
+
+      if (data.clienteId) {
+        await carregarAtendimentos(data.clienteId);
+      } else {
+        const contagemPorCliente = {};
+        data.fontes.forEach((f) => {
+          if (f.clientId) contagemPorCliente[f.clientId] = (contagemPorCliente[f.clientId] || 0) + 1;
+        });
+        const clienteTop = data.fontes[0]?.clientId;
+        if (clienteTop && contagemPorCliente[clienteTop] >= 2) {
+          await carregarAtendimentos(clienteTop);
+        }
+      }
+
+      statusEl.textContent = "";
+    } catch (err) {
+      statusEl.textContent = "Erro ao consultar: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function carregarAtendimentos(clienteId) {
+    const res = await fetch(`/clientes/${clienteId}/atendimentos`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    resumoClienteNome.textContent = data.clienteNome;
+    clienteDadosNome.textContent = data.clienteNome || "-";
+    clienteDadosEmail.textContent = data.clienteEmail || "-";
+    clienteDadosTelefone.textContent = data.clienteTelefone || "-";
+    clienteDadosDocumento.textContent = data.clienteDocumento || "-";
+    statTotal.textContent = data.total;
+    registrarHistorico(clienteId, data.clienteNome);
+
+    const maxTotal = Math.max(1, ...data.porStatus.map((s) => s.total));
+    chartCols.innerHTML = "";
+    chartLabels.innerHTML = "";
+
+    data.porStatus.forEach((s, i) => {
+      const cor = SERIES_COLORS[i % SERIES_COLORS.length];
+      const alturaPct = (s.total / maxTotal) * 100;
+
+      const col = document.createElement("div");
+      col.className = "chart-col";
+      const valueEl = document.createElement("div");
+      valueEl.className = "chart-value";
+      valueEl.textContent = s.total;
+      const bar = document.createElement("div");
+      bar.className = "chart-bar";
+      bar.style.height = `${alturaPct}%`;
+      bar.style.background = cor;
+      bar.title = `${s.status}: ${s.total}`;
+      bar.tabIndex = 0;
+      col.appendChild(valueEl);
+      col.appendChild(bar);
+      chartCols.appendChild(col);
+
+      const label = document.createElement("div");
+      label.className = "chart-label";
+      const swatch = document.createElement("span");
+      swatch.className = "chart-swatch";
+      swatch.style.background = cor;
+      label.appendChild(swatch);
+      const labelText = document.createElement("span");
+      labelText.textContent = s.status;
+      label.appendChild(labelText);
+      chartLabels.appendChild(label);
+    });
+
+    const maxAssunto = Math.max(1, ...data.porAssunto.map((a) => a.total));
+    chartAssuntos.innerHTML = "";
+    data.porAssunto.forEach((a) => {
+      const row = document.createElement("div");
+      row.className = "hbar-row";
+
+      const label = document.createElement("div");
+      label.className = "hbar-label";
+      label.textContent = a.assunto;
+      label.title = a.assunto;
+
+      const track = document.createElement("div");
+      track.className = "hbar-track";
+      const bar = document.createElement("div");
+      bar.className = "hbar-bar";
+      bar.style.width = `${(a.total / maxAssunto) * 100}%`;
+      bar.title = `${a.assunto}: ${a.total}`;
+      bar.tabIndex = 0;
+      track.appendChild(bar);
+
+      const value = document.createElement("div");
+      value.className = "hbar-value";
+      value.textContent = a.total;
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(value);
+      chartAssuntos.appendChild(row);
+    });
+
+    tabelaAtendimentosBody.innerHTML = "";
+    data.atendimentos.forEach((a) => {
+      const tr = document.createElement("tr");
+      const dataFormatada = a.dataAbertura ? new Date(a.dataAbertura).toLocaleString("pt-BR") : "-";
+      [a.numeroChamado, a.assunto || "-", a.status || "-", dataFormatada].forEach((valor) => {
+        const td = document.createElement("td");
+        td.textContent = valor;
+        tr.appendChild(td);
+      });
+      tabelaAtendimentosBody.appendChild(tr);
+    });
+
+    resumoCliente.hidden = false;
+  }
+</script>
+</body>
+</html>
